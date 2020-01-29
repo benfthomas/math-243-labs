@@ -1,0 +1,618 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={Lab 2: Linear Regression},
+            pdfauthor={Ben Thomas},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\providecommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+
+  \title{Lab 2: Linear Regression}
+    \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+  \subtitle{An Island Never Cries}
+  \author{Ben Thomas}
+    \preauthor{\centering\large\emph}
+  \postauthor{\par}
+    \date{}
+    \predate{}\postdate{}
+  
+\usepackage{dcolumn}
+
+\begin{document}
+\maketitle
+
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
+
+\subsubsection{Earthquake detection}\label{earthquake-detection}
+
+\paragraph{Exercise 1}\label{exercise-1}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Create the first scatterplot }
+\KeywordTok{library}\NormalTok{(ggplot2)}
+\NormalTok{DataPlot1 <-}\StringTok{ }\KeywordTok{ggplot}\NormalTok{(quakes, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{mag, }\DataTypeTok{y=}\NormalTok{stations)) }\OperatorTok{+}\StringTok{ }\KeywordTok{geom_point}\NormalTok{(}\DataTypeTok{alpha=}\NormalTok{.}\DecValTok{2}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{title=}\StringTok{"Magnitude vs number of stations reporting"}\NormalTok{, }
+         \DataTypeTok{y=}\StringTok{"Number of stations reporting"}\NormalTok{, }\DataTypeTok{x=}\StringTok{"Richter magnitude"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_jitter}\NormalTok{() }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_light}\NormalTok{() }\OperatorTok{+}\StringTok{ }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{plot.title =} \KeywordTok{element_text}\NormalTok{(}\DataTypeTok{hjust =} \FloatTok{0.5}\NormalTok{)) }
+\NormalTok{DataPlot1}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{lab-2_files/figure-latex/unnamed-chunk-1-1.pdf}
+
+After plotting the relationship between the magnitude of an earthquake
+in our sample and how many stations reported detecting it, it seems
+clear that there is a strong, positive relationship between the two, as
+we would expect.
+
+\newpage
+
+\paragraph{Exercise 2}\label{exercise-2}
+
+If there were absolutely no relationship between a quake's richter
+magnitude and the number of stations which reported detecting the quake,
+then I'd expect a linear regression with the number of stations
+reporting as the output and the quake's magnitude as the input to have
+an intercept equal to the average number of stations reporting, and a
+slope of 0.
+
+\paragraph{Exercise 3}\label{exercise-3}
+
+Let's test this! Below I've created and summarized a linear regression
+model (using stargazer for aesthetics), and added it to the plot from
+before.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Creating the linear model}
+\NormalTok{m1 <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(stations }\OperatorTok{~}\StringTok{ }\NormalTok{mag, }\DataTypeTok{data =}\NormalTok{ quakes)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Display the regression results with stargazer}
+\KeywordTok{stargazer}\NormalTok{(m1, }\DataTypeTok{title=}\StringTok{"Regression Results"}\NormalTok{, }\DataTypeTok{align=}\OtherTok{TRUE}\NormalTok{, }
+          \DataTypeTok{dep.var.labels =}\KeywordTok{c}\NormalTok{(}\StringTok{"Number of stations reporting"}\NormalTok{), }
+          \DataTypeTok{covariate.labels=}\KeywordTok{c}\NormalTok{(}\StringTok{"Richter magnitude"}\NormalTok{),}
+          \DataTypeTok{omit.stat=}\KeywordTok{c}\NormalTok{(}\StringTok{"LL"}\NormalTok{,}\StringTok{"ser"}\NormalTok{,}\StringTok{"f"}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{table}[!htbp] \centering 
+  \caption{Regression Results} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}}lD{.}{.}{-3} } 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{1}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-2} 
+\\[-1.8ex] & \multicolumn{1}{c}{Number of stations reporting} \\ 
+\hline \\[-1.8ex] 
+ Richter magnitude & 46.282^{***} \\ 
+  & (0.903) \\ 
+  & \\ 
+ Constant & -180.424^{***} \\ 
+  & (4.190) \\ 
+  & \\ 
+\hline \\[-1.8ex] 
+Observations & \multicolumn{1}{c}{1,000} \\ 
+R$^{2}$ & \multicolumn{1}{c}{0.725} \\ 
+Adjusted R$^{2}$ & \multicolumn{1}{c}{0.724} \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{1}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+\end{tabular} 
+\end{table}
+
+\newpage
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Displaying the original plot with the regression line}
+\NormalTok{DataPlot2 <-}\StringTok{ }\KeywordTok{ggplot}\NormalTok{(quakes, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{mag, }\DataTypeTok{y=}\NormalTok{stations)) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\DataTypeTok{alpha=}\NormalTok{.}\DecValTok{5}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_abline}\NormalTok{(}\DataTypeTok{intercept =}\NormalTok{ m1}\OperatorTok{$}\NormalTok{coef[}\DecValTok{1}\NormalTok{], }\DataTypeTok{slope =}\NormalTok{ m1}\OperatorTok{$}\NormalTok{coef[}\DecValTok{2}\NormalTok{], }\DataTypeTok{col =} \DecValTok{2}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{title=}\StringTok{"Magnitude vs number of stations reporting"}\NormalTok{, }
+         \DataTypeTok{y=}\StringTok{"Number of stations reporting"}\NormalTok{, }\DataTypeTok{x=}\StringTok{"Richter magnitude"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_jitter}\NormalTok{() }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_light}\NormalTok{() }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{plot.title =} \KeywordTok{element_text}\NormalTok{(}\DataTypeTok{hjust =} \FloatTok{0.5}\NormalTok{)) }
+\NormalTok{DataPlot2}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{lab-2_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+As we can see, the slope of the coefficient of the richter magnitude is
+distinctly not 0, and the intercept is not the mean of the stations
+reporting. This indicates that there is a relationship between the
+magnitude of an earthquake and the number of stations that report it.
+Specifically, we'd expect that an increase in magnitude of 1 would lead
+to around 46 more stations reporting the quake.
+
+\paragraph{Exercise 4}\label{exercise-4}
+
+While I have faith in R's lm() function, it never hurts to verify the
+regression output by hand. I've done this below, and as you can see, the
+slope generated by hand is identical to the one produced by the lm()
+function earlier.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{x <-}\StringTok{ }\NormalTok{quakes}\OperatorTok{$}\NormalTok{mag}
+\NormalTok{y <-}\StringTok{ }\NormalTok{quakes}\OperatorTok{$}\NormalTok{stations}
+\NormalTok{slope <-}\StringTok{ }\NormalTok{(}\KeywordTok{sd}\NormalTok{(y)}\OperatorTok{/}\KeywordTok{sd}\NormalTok{(x)) }\OperatorTok{*}\StringTok{ }\KeywordTok{cor}\NormalTok{(x, y)}
+\NormalTok{slope}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 46.28221
+\end{verbatim}
+
+\paragraph{Exercise 5}\label{exercise-5}
+
+We can also verify R's calculation of the confidence interval by hand.
+I've done so below.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{SE_slope <-}\StringTok{ }\KeywordTok{summary}\NormalTok{(m1)}\OperatorTok{$}\NormalTok{coef[}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{]}
+\NormalTok{n <-}\StringTok{ }\KeywordTok{nrow}\NormalTok{(quakes)}
+\NormalTok{t_stat <-}\StringTok{ }\KeywordTok{qt}\NormalTok{(.}\DecValTok{025}\NormalTok{, }\DataTypeTok{df =}\NormalTok{ n }\OperatorTok{-}\StringTok{ }\DecValTok{2}\NormalTok{)}
+
+\NormalTok{LB <-}\StringTok{ }\NormalTok{slope }\OperatorTok{+}\StringTok{ }\NormalTok{t_stat }\OperatorTok{*}\StringTok{ }\NormalTok{SE_slope}
+\NormalTok{UB <-}\StringTok{ }\NormalTok{slope }\OperatorTok{-}\StringTok{ }\NormalTok{t_stat }\OperatorTok{*}\StringTok{ }\NormalTok{SE_slope}
+\KeywordTok{c}\NormalTok{(LB, UB)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 44.50944 48.05498
+\end{verbatim}
+
+This calculated confidence interval (44.51 to 48.05) is identical to the
+one generated by R's confint() function, displayed below.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{confint}\NormalTok{(m1)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##                  2.5 %     97.5 %
+## (Intercept) -188.64628 -172.20238
+## mag           44.50944   48.05498
+\end{verbatim}
+
+\paragraph{Exercise 6}\label{exercise-6}
+
+With our regression, we can predict how many stations might detect an
+earthquake of a given magnitude. Given an earthquake with magnitude 7.0,
+we can predict that the number of stations which would detect it would
+be equal to the intercept of our regression equation, plus 7.0
+multiplied by the slope of our regression line. This would end up
+equaling around 144 stations.
+
+\paragraph{Exercise 7}\label{exercise-7}
+
+\begin{itemize}
+\tightlist
+\item
+  In Exercise 1, our primary goal was to graphically understand and
+  describe the relationship between magnitude and number of stations
+  reporting. This makes our goal there \emph{data description}.
+\item
+  In Exercise 2, we attempted to understand the hypothetical scenario
+  where there was no relationship, and stated what our regression output
+  would look like in this scenario. Our goal here was still \emph{data
+  description}.
+\item
+  In Exercise 3, our goal was to understand the relationship between
+  quake magnitude and number of stations reporting using regression.
+  Since we were trying to determine whether or not magnitude was
+  important for how many stations report, our main goal was
+  \emph{inference}.
+\item
+  In Exercises 4 and 5, we verified the results that R had given us with
+  lm() and confint(). Our goal here was therefore \emph{data
+  description}.
+\item
+  In Exercise 6, we aimed to predict the number of stations that would
+  report a magnitude 7 earthquake. This is \emph{prediction}.
+\end{itemize}
+
+\newpage
+
+\subsubsection{Simulation}\label{simulation}
+
+\paragraph{Exercise 9}\label{exercise-9}
+
+In order to assess how appropriate the model created above is for the
+dataset, I am going to simulate a new dataset using my fitted model, and
+compare it to the original data. To start, I'm going to generate 1,000
+new X values, normally distributed, with a mean magnitude of 5.0.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{xNew <-}\StringTok{ }\KeywordTok{rnorm}\NormalTok{(}\DecValTok{1000}\NormalTok{, }\DecValTok{5}\NormalTok{, .}\DecValTok{5}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\paragraph{Exercise 10}\label{exercise-10}
+
+Now, I'll generate the predicted y values for each of the new x values,
+using the linear model created earlier.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# The function to generate the estimated y values}
+\NormalTok{f_hat <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(x) \{}
+\OperatorTok{-}\StringTok{ }\FloatTok{180.424} \OperatorTok{+}\StringTok{ }\FloatTok{46.28221} \OperatorTok{*}\StringTok{ }\NormalTok{x}
+\NormalTok{\}}
+
+\CommentTok{# Generate the new estimated y values}
+\NormalTok{yHatNew <-}\StringTok{ }\KeywordTok{f_hat}\NormalTok{(xNew)}
+\end{Highlighting}
+\end{Shaded}
+
+\paragraph{Exercise 11}\label{exercise-11}
+
+We'll now generate the new y values. To do so, we'll take our estimated
+y values, generated above, and add in some error, from our original
+data.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Find the standard error from our original linear model}
+\NormalTok{RSS <-}\StringTok{ }\KeywordTok{sum}\NormalTok{((m1}\OperatorTok{$}\NormalTok{res)}\OperatorTok{^}\DecValTok{2}\NormalTok{)}
+\NormalTok{sigma2 <-}\StringTok{ }\NormalTok{RSS}\OperatorTok{/}\DecValTok{998}
+\NormalTok{sigma <-}\StringTok{ }\KeywordTok{sqrt}\NormalTok{(sigma2)}
+
+\CommentTok{# Generate our new y values}
+\NormalTok{yNew <-}\StringTok{ }\NormalTok{yHatNew }\OperatorTok{+}\StringTok{ }\KeywordTok{rnorm}\NormalTok{(}\DecValTok{1000}\NormalTok{, }\DecValTok{0}\NormalTok{, sigma)}
+
+\CommentTok{# Add all new values into a new dataset}
+\NormalTok{newData <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(xNew, yNew)}
+\end{Highlighting}
+\end{Shaded}
+
+\paragraph{Exercise 12}\label{exercise-12}
+
+Let's plot our new dataset. Note that I've also included the old dataset
+underneath our new one, for easy comparison. Note that I'm using the
+ggpubr and cowplot packages for aesthetic purposes.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(cowplot)}
+\KeywordTok{library}\NormalTok{(ggpubr)}
+\NormalTok{newDataPlot <-}\StringTok{ }\KeywordTok{ggplot}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ newData, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{xNew, }\DataTypeTok{y=}\NormalTok{yNew)) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\DataTypeTok{alpha=}\NormalTok{.}\DecValTok{2}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_abline}\NormalTok{(}\DataTypeTok{intercept =}\NormalTok{ m1}\OperatorTok{$}\NormalTok{coef[}\DecValTok{1}\NormalTok{], }\DataTypeTok{slope =}\NormalTok{ m1}\OperatorTok{$}\NormalTok{coef[}\DecValTok{2}\NormalTok{], }\DataTypeTok{col =} \DecValTok{2}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{title=}\StringTok{"New magnitude vs number of stations reporting"}\NormalTok{, }
+         \DataTypeTok{y=}\StringTok{"Number of stations reporting"}\NormalTok{, }\DataTypeTok{x=}\StringTok{"Richter magnitude"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_jitter}\NormalTok{() }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_light}\NormalTok{() }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{plot.title =} \KeywordTok{element_text}\NormalTok{(}\DataTypeTok{hjust =} \FloatTok{0.5}\NormalTok{)) }
+
+\KeywordTok{ggarrange}\NormalTok{(newDataPlot, DataPlot2, }\DataTypeTok{ncol =} \DecValTok{1}\NormalTok{, }\DataTypeTok{nrow =} \DecValTok{2}\NormalTok{, }\DataTypeTok{heights =} \KeywordTok{c}\NormalTok{(}\DecValTok{8}\NormalTok{, }\DecValTok{8}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{lab-2_files/figure-latex/unnamed-chunk-11-1.pdf}
+
+Clearly, there are some differences between the actual dataset and the
+one we generated. For one, ours is centered around magnitude 5 and
+normally distributed, while the original is clustered more around
+smaller magnitudes, and distinctly not normally distributed.
+Additionally, as the magnitude increases, the number of stations
+reporting in the original dataset tends to be above the trend line,
+which does not hold for our generated dataset. We could potentially get
+around this by estimating a polynomial regression, and using this new
+trend line as our mean.
+
+\newpage
+
+\paragraph{Challenge Problem}\label{challenge-problem}
+
+As an interesting exercise, let's map these earthquakes using latitude
+and longitude, with the size of the dot indicating the magnitude of the
+quake. Doing so might inform us as to where the problem areas are, and
+where residents might need to take more caution.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{MapPlot <-}\StringTok{ }\KeywordTok{ggplot}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ quakes, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{lat, }\DataTypeTok{y=}\NormalTok{long)) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\DataTypeTok{size =}\NormalTok{ (}\DecValTok{1} \OperatorTok{+}\StringTok{ }\NormalTok{.}\DecValTok{005}\OperatorTok{*}\NormalTok{(quakes}\OperatorTok{$}\NormalTok{mag)}\OperatorTok{^}\DecValTok{4}\NormalTok{), }\DataTypeTok{alpha=}\NormalTok{.}\DecValTok{3}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{title=}\StringTok{"Earthquake map"}\NormalTok{, }
+         \DataTypeTok{y=}\StringTok{"Longitude"}\NormalTok{, }\DataTypeTok{x=}\StringTok{"Latitude"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_light}\NormalTok{() }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{plot.title =} \KeywordTok{element_text}\NormalTok{(}\DataTypeTok{hjust =} \FloatTok{0.5}\NormalTok{)) }
+\NormalTok{MapPlot}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{lab-2_files/figure-latex/unnamed-chunk-12-1.pdf}
+
+\newpage
+
+\section{Problem Set 2}\label{problem-set-2}
+
+\subsubsection{Chapter 3 exercises}\label{chapter-3-exercises}
+
+\paragraph{Problem 1}\label{problem-1}
+
+In Table 3.4, the p-values correspond to the following null hypotheses,
+respectively:
+
+\begin{itemize}
+\tightlist
+\item
+  the TV advertising budget has no effect on sales
+\item
+  the radio advertising budget has no effect on sales
+\item
+  the newspaper advertising budget has no effect on sales
+\end{itemize}
+
+Based on the p-values reported in this table, we know that:
+
+\begin{itemize}
+\tightlist
+\item
+  there is less than a 1\% chance that we would observe the association
+  we see between TV advertising budgets and sales if there were no
+  actual relationship between the two
+\item
+  there is less than a 1\% chance that we would observe the association
+  seen between radio advertising budgets and sales if there were no
+  actual relationship between the two
+\item
+  there is an 86\% chance that we would see the observed relationship
+  between newspaper advertising budgets and sales if there were no
+  actual relationship between the two
+\end{itemize}
+
+From these probabilities, we can therefore conclude that:
+
+\begin{itemize}
+\tightlist
+\item
+  there is a significant (at the 99\% level) relationship between TV
+  advertising budgets and sales
+\item
+  there is a significant (at the 99\% level) relationship between radio
+  advertising budgets and sales
+\item
+  there is not a significant relationship between newspaper advertising
+  budgets and sales
+\end{itemize}
+
+\paragraph{Problem 4}\label{problem-4}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\tightlist
+\item
+  For the training data, even though the true relationship in our data
+  is linear, I'd expect the cubic regression to have a lower residual
+  sum of squares. This is because this regression will catch more of the
+  random error, unlike the linear regression, which is not as flexible.
+\item
+  For the test data, I'd expect the linear regression to have a lower
+  residual sum of squares. While the cubic regression would have a lower
+  RSS for the training data, it would accomplish this by overfitting.
+  When faced with a different data set, which is true to the true
+  relationship (which in this case is linear) but which doesn't have the
+  exact pattern of random error seen in the training data, the cubic
+  regression will perform worse than the linear.
+\item
+  No matter the true relationship in the data, I'd expect the cubic
+  regression to have a lower RSS when looking at the training data. As
+  said before, it is more flexible, and accounts for more variation
+  (which may or may not reflect the actual relationship in the data)
+  than the linear model would.
+\item
+  In this case, I think my answer depends on the true relationship
+  inherent in the data. If the true relationship is linear, then as
+  before I'd expect the linear model to have a lower test RSS. However,
+  if the relationship is cubic (or quartic, etc.) then I'd expect the
+  cubic regression to have a lower test RSS.
+\end{enumerate}
+
+\newpage
+
+\paragraph{Problem 5}\label{problem-5}
+
+\begin{eqnarray} 
+\hat{y}_i = x_i \beta \\
+= x_i \frac{\sum_{i' = 1}^n x_{i'} y_{i'}}{\sum_{j=1}^n x_j ^2} \\
+= \frac{\sum_{i'=1}^n x_i x_{i'}y_{i'}}{\sum_{j=1}^n x_j ^2} \\
+= \sum_{i'=1}^n a_{i'} y_{i'}
+\end{eqnarray}
+
+where \[a_{i'} \equiv \frac{x_i x_{i'}}{\sum_{j=1} ^n x_j ^2}\]
+
+\subsubsection{Additional exercise}\label{additional-exercise}
+
+The equation below describes the k-nearest neighbors estimator.
+\[\hat{f}(x) = \frac{1}{k} \sum_{x_i \in \mathcal{N}(x)} y_i\] Since
+this model has a closed form for bias and variance, we can directly
+calculate them. Let's use the following data set as training data.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(tidyverse)}
+\NormalTok{x <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\DecValTok{1}\OperatorTok{:}\DecValTok{3}\NormalTok{, }\DecValTok{5}\OperatorTok{:}\DecValTok{12}\NormalTok{)}
+\NormalTok{y <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\OperatorTok{-}\FloatTok{7.1}\NormalTok{, }\OperatorTok{-}\FloatTok{7.1}\NormalTok{, .}\DecValTok{5}\NormalTok{, }\OperatorTok{-}\FloatTok{3.6}\NormalTok{, }\OperatorTok{-}\DecValTok{2}\NormalTok{, }\OperatorTok{-}\FloatTok{1.7}\NormalTok{,}
+       \OperatorTok{-}\DecValTok{4}\NormalTok{, }\OperatorTok{-}\NormalTok{.}\DecValTok{2}\NormalTok{, }\OperatorTok{-}\FloatTok{1.2}\NormalTok{, }\OperatorTok{-}\FloatTok{1.2}\NormalTok{, }\OperatorTok{-}\FloatTok{3.5}\NormalTok{)}
+\NormalTok{df_train <-}\StringTok{ }\KeywordTok{tibble}\NormalTok{(x, y)}
+\end{Highlighting}
+\end{Shaded}
+
+We know:
+\[MSE = E((y - \hat{f})^2) = var(\hat{f}) + [f - E(\hat{f})]^2 + var(\epsilon)\]
+where \(var(\hat{f})\) is the variance, \([f - E(\hat{f})]^2\) is the
+bias, and \(var(\epsilon)\) is the random error term.
+
+From this information, we can use some identities to isolate each of
+these terms. \[MSE = var(\hat{f}) + [f - E(\hat{f})]^2 + var(\epsilon)\\
+= var(\frac{1}{k} \sum_{x_i \in \mathcal{N}(x)} y_i) + [f - E(\frac{1}{k} * \sum_{x_i \in \mathcal{N}(x)} y_i)]^2 + \sigma^2\\\]
+
+After some additional math, this boils down to:
+\[\frac{\sigma^2}{K} + [f - \frac{1}{K} * \sum_{x_i \in \mathcal{N}(x)} f(x_i)]^2 + \sigma^2\]
+
+After subbing in for our true f, given to us as
+\(f = -9.3 + 2.6 x - 0.3 x^2 + .01 x^3\), and in for \(\sigma^2\), equal
+to 1, then:
+\[\frac{1}{K} + [-9.3 + 2.6 x - 0.3 x^2 + .01 x^3 - \frac{1}{K} * \sum_{x_i \in \mathcal{N}(x)} -9.3 + 2.6 x_i - 0.3 x_i^2 + .01 x_i^3]^2 + 1\]
+
+where \(\frac{1}{K}\) is the variance,
+\([-9.3 + 2.6 x - 0.3 x^2 + .01 x^3 - \frac{1}{K} * \sum_{x_i \in \mathcal{N}(x)} (-9.3 + 2.6 x_i - 0.3 x_i^2 + .01 x_i^3)]^2\)
+is the bias, and \(1\) is the random error.
+
+Then, assuming that \(\sigma^2\) is 1:
+
+\begin{itemize}
+\tightlist
+\item
+  our variance is \(\frac{1}{K}\)
+\item
+  our bias is
+  \([-9.3 + 2.6 x - 0.3 x^2 + .01 x^3 - \frac{1}{K} * \sum_{x_i \in \mathcal{N}(x)} (-9.3 + 2.6 x_i - 0.3 x_i^2 + .01 x_i^3)]^2\)
+\item
+  our random error is \(1\)
+\end{itemize}
+
+Let's say x = 5. Then, our bias is:
+\[[-3.93- \frac{1}{K} * \sum_{x_i \in \mathcal{N}(x)} (-9.3 + 2.6 x_i - 0.3 x_i^2 + .01 x_i^3)]^2\]
+Graphed, this looks like:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{k <-}\StringTok{ }\DecValTok{1}\OperatorTok{:}\DecValTok{10}
+
+\NormalTok{df <-}\StringTok{ }\KeywordTok{tibble}\NormalTok{(}\DataTypeTok{k =}\NormalTok{ k)}
+\KeywordTok{ggplot}\NormalTok{(df) }\OperatorTok{+}\StringTok{ }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ k, }\DataTypeTok{y =} \DecValTok{1}\NormalTok{), }\DataTypeTok{col =} \StringTok{"tomato"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ k, }\DataTypeTok{y =} \DecValTok{1}\OperatorTok{/}\NormalTok{k), }\DataTypeTok{col =} \StringTok{"blue"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{"variability"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{lab-2_files/figure-latex/unnamed-chunk-14-1.pdf}
+
+
+\end{document}

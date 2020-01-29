@@ -1,0 +1,327 @@
+---
+title: 'Lab 3: Regression Competition'
+author: 
+- "Ben Thomas"
+- "Olek Wojcik"
+date: "9/25/2019"
+output: pdf_document
+---
+
+### Our final model and functions
+
+#### Our data wrangling function
+
+```{r}
+library(tidyverse)
+group_J_process <- function(training_data) {
+  training_data <- training_data %>%
+    mutate(sqrInvInc = (100*pctWInvInc)^2,
+           sqrPop = population^2)
+}
+```
+
+#### Our fit function
+
+```{r}
+library(tidyverse)
+group_J_fit <- function(training_data) {
+  m1 <- lm(ViolentCrimesPerPop ~ population + sqrPop + log(medIncome) + PctHousOccup +
+             NumInShelters + PctKids2Par + pctWInvInc + sqrInvInc + PctPersDenseHous +
+             racePctWhite + PctWorkMomYoungKids, data = training_data)
+  m1
+}
+```
+
+#### Our MSE function
+
+```{r}
+group_J_MSE <- function(model, data) {
+  MSE <- mean((data$ViolentCrimesPerPop - predict.lm(model, data)) ^ 2)
+  return(MSE)
+}
+```
+
+#### Running the MSE function on our data/fit
+
+```{r}
+d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
+d_new <- group_J_process(d)
+group_J_MSE(group_J_fit(d_new), d_new)
+```
+
+\newpage
+
+### Preliminary work
+
+#### Exercise 1
+
+What we expect to have a significant effect:
+
+- medIncome
+- PctNotHSGrad
+- PctUnemployed
+- PctPersDenseHous
+- RacialMatchCommPol
+- PopDens
+- PctUnemployed
+
+#### Exercise 2
+
+We've graphed a number of scatterplots with ViolentCrimesPerPop and variables of interest to determine what these relationships look like. 
+
+```{r}
+library(tidyverse)
+d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
+ggplot(data = d, mapping = aes(y = ViolentCrimesPerPop, x = medIncome)) +
+geom_point(alpha = 0.2) +
+geom_smooth(method = "lm", se = FALSE)
+```
+
+\newpage
+
+```{r}
+ggplot(data = d, mapping = aes(y = ViolentCrimesPerPop, x = PctNotHSGrad)) +
+geom_point(alpha = 0.2) +
+geom_smooth(method = "lm", se = FALSE)
+```
+
+\newpage
+
+```{r}
+ggplot(data = d, mapping = aes(y = ViolentCrimesPerPop, x = PctPersDenseHous)) +
+geom_point(alpha = 0.2) +
+geom_smooth(method = "lm", se = FALSE)
+```
+
+\newpage
+
+```{r}
+ggplot(data = d, mapping = aes(y = ViolentCrimesPerPop, x = RacialMatchCommPol)) +
+geom_point(alpha = 0.2) +
+geom_smooth(method = "lm", se = FALSE)
+```
+
+\newpage
+
+```{r}
+ggplot(data = d, mapping = aes(y = ViolentCrimesPerPop, x = PopDens)) +
+geom_point(alpha = 0.2) +
+geom_smooth(method = "lm", se = FALSE)
+```
+
+\newpage
+
+```{r}
+ggplot(data = d, mapping = aes(y = ViolentCrimesPerPop, x = PctUnemployed)) +
+geom_point(alpha = 0.2) +
+geom_smooth(method = "lm", se = FALSE)
+```
+
+After going through most of the police variables, it seems like the missing data makes them questionable variables at best. We therefore decided to stick to the other variables to make our model. We decided to log some variables to make them neater and more linear, but later on we discovered that due to an error, ViolentCrimesPerPop can't be logged without an error that breaks the regression.
+
+```{r}
+ggplot(data = d, mapping = aes(y = log(ViolentCrimesPerPop), x = log(medIncome))) +
+geom_point(alpha = 0.2) +
+geom_smooth(method = "lm", se = FALSE)
+```
+
+\newpage
+
+```{r}
+ggplot(data = d, mapping = aes(y = log(ViolentCrimesPerPop), x = log(PctNotHSGrad))) +
+geom_point(alpha = 0.2) +
+geom_smooth(method = "lm", se = FALSE)
+```
+
+\newpage
+
+```{r}
+ggplot(data = d, mapping = aes(y = log(ViolentCrimesPerPop), x = PctPersDenseHous)) +
+geom_point(alpha = 0.2) +
+geom_smooth(method = "lm", se = FALSE)
+```
+\newpage
+
+#### Exercise 3
+
+Here is Olek's original model:
+
+```{r}
+
+
+d <- d %>%
+mutate( log_ViolentCrimesPerPop = log(ViolentCrimesPerPop), log_medIncome = log(medIncome), log_PctNotHSGrad = log(PctNotHSGrad), log_PctPersDenseHous = log(PctPersDenseHous)) %>%
+  drop_na(log_ViolentCrimesPerPop, log_medIncome, log_PctNotHSGrad, log_PctPersDenseHous)  %>%
+   mutate(sqrInvInc = (100*pctWInvInc)^2,
+        sqrPop = population^2,
+        invPop = 1/population)
+
+olek1 = lm(ViolentCrimesPerPop ~ log_medIncome + log_PctNotHSGrad + PctPersDenseHous, data = d)
+
+summary(olek1)
+```
+
+\newpage
+
+Here is Ben's original model:
+
+```{r}
+ben1 <- lm(ViolentCrimesPerPop ~ PctPopUnderPov + PctLess9thGrade + PctUnemployed + PersPerFam + PctHousOccup + NumInShelters, data = d)
+
+summary(ben1)
+```
+
+These were our initial models. We decided to experiment with different variables, and we saw that many variables captured others: for example, if we added PctKids2Par to the model, PctNotHSGrad would become insignificant.
+This led us to transform some variables as well: we looked at graphs of our different variables to check their linearity, and found that population looked quite bent, and so we chose to squre it, and the term was significant.
+We also looked at the diagnostics charts. We need to have a problem with homoskedasticity, but couldn't find a way around it. The models looked quite similar in the diagnostics, so we decided to choose the one with the higher adjusted R squared, which was Ben's.
+
+\newpage
+```{r}
+olek2 = lm(ViolentCrimesPerPop ~ log_medIncome + PctPersDenseHous + PctKids2Par + NumUnderPov,  data = d)
+
+summary(olek2)
+```
+\newpage
+```{r}
+ben2 <- lm(ViolentCrimesPerPop ~ population + sqrPop + log(medIncome) + PctHousOccup + NumInShelters + PctKids2Par + pctWInvInc + sqrInvInc + PctPersDenseHous + racePctWhite + PctWorkMomYoungKids, data = d)
+
+summary(ben2)
+```
+\newpage
+```{r}
+plot(olek2, 1)
+plot(olek2, 2)
+plot(olek2, 3)
+```
+```{r}
+plot(ben2, 1)
+plot(ben2, 2)
+plot(ben2, 3)
+```
+\newpage
+
+### Additional Exercise
+
+Let's try an automated selection method, to see what model pops out. 
+
+```{r, eval=FALSE}
+
+library(leaps)
+d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
+
+# First let's trim the data
+d_new <- d %>%
+  select(population:PctSameState85, 
+         ViolentCrimesPerPop)
+
+# Let's run the automated selection model
+reg_mod <- regsubsets(ViolentCrimesPerPop ~ ., 
+                      data = d_new, 
+                      nvmax = 25, 
+                      method = "forward")
+
+# Let's find the model which maximizes adjusted R2
+summary(reg_mod)$which[which.max(summary(reg_mod)$adjr2),]
+```
+
+```{r, eval=FALSE}
+library(leaps)
+d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
+
+# Let's trim the data
+d_new <- d %>%
+  select(population:PctSameState85, 
+         ViolentCrimesPerPop)
+
+# The backward model
+reg_mod2 <- regsubsets(ViolentCrimesPerPop ~ ., 
+                       data = d_new, 
+                       nvmax = 25, 
+                       method = "backward")
+ 
+# Let's maximize our adjusted R2
+summary(reg_mod2)$which[which.max(summary(reg_mod2)$adjr2),]
+```
+
+\newpage
+
+Let's fit the model with the variables which were in the best forward model
+```{r}
+forward = lm(ViolentCrimesPerPop ~ 
+               racePctHisp + 
+               PctNotHSGrad + 
+               PctEmplProfServ + 
+               FemalePctDiv + 
+               PctIlleg + 
+               PctImmigRec10 + 
+               PctVacMore6Mos + 
+               MedRent + 
+               NumStreet + 
+               pctUrban + 
+               pctWSocSec + 
+               MedRentPctHousInc + 
+               PctHousOccup + 
+               PctHousNoPhone + 
+               RentLowQ  + 
+               racePctWhite + 
+               indianPerCap + 
+               PctEmploy + 
+               MalePctDivorce + 
+               PctWorkMom + 
+               PctImmigRec5 + 
+               MedOwnCostPctIncNoMtg,  
+             data = d)
+
+summary(forward)
+```
+
+\newpage
+
+Now let's use the variables that were in the best backwards model
+```{r}
+backward = lm(ViolentCrimesPerPop ~ 
+                medFamInc + 
+                MalePctNevMarr + 
+                PctImmigRec8 + 
+                PersPerOccupHous + 
+                PctHousLess3BR + 
+                PctVacantBoarded + 
+                population + 
+                numbUrban + 
+                PctIlleg + 
+                PctVacMore6Mos + 
+                MedRent + 
+                NumStreet + 
+                pctWSocSec + 
+                agePct12t29 + 
+                medIncome + 
+                RentLowQ + 
+                racePctWhite + 
+                PctEmploy + 
+                MalePctDivorce + 
+                PctWorkMom + 
+                PctImmigRec5 + 
+                PctLargHouseOccup + 
+                MedOwnCostPctIncNoMtg,
+              data = d)
+
+summary(backward)
+```
+
+\newpage
+
+```{r}
+plot(forward, 1)
+plot(forward, 2)
+plot(forward, 3)
+```
+
+\newpage
+
+```{r}
+plot(backward, 1)
+plot(backward, 2)
+plot(backward, 3)
+```
+
+The backward method yielded a Adjusted R Squared which was higher than the forward method, as well as displying similar characteristics on the assessment plots, with heteroskedasticity remaining a problem.

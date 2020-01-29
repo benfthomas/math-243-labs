@@ -1,0 +1,259 @@
+---
+title: 'Lab 8: Ransom notes keep falling'
+author: "Ben Thomas"
+date: "11/17/2019"
+output: pdf_document
+---
+
+## Letter classification
+
+### Data
+
+Today, I'll be using boosted trees to do some character regression. To start, I'll download our dataset, which includes a catalog of features extracted from 20,000 different characters. 
+
+```{r Data download}
+lettersdf <- read.csv(
+  "https://raw.githubusercontent.com/stat-learning/course-materials/master/data/letters.csv",
+  header = FALSE)
+```
+
+To move forward, I'm going to separate out this dataset into training and test data. I've done so below. 
+
+```{r Data separation}
+set.seed(1)
+train <- sample(1:nrow(lettersdf), nrow(lettersdf) * .75)
+df_train <- lettersdf[train,]
+df_test <- lettersdf[-train,]
+```
+
+### Building a boosted tree
+
+I'll now move forward and build out a boosted classification tree to predict the class (letter) of each of these observations. To do so, I'm using the `gbm` package.
+
+```{r Boosted tree, warning = FALSE, message = FALSE}
+library (gbm)
+set.seed(1)
+boost.characters=gbm(V1 ~ .,
+                     data=df_train, 
+                     n.trees=50, 
+                     interaction.depth=1,
+                     shrinkage = 0.1)
+head(summary(boost.characters))
+```
+
+As we see here, V13 is the most important variable for predicting the letter, followed by V12 and V14.
+
+\newpage
+
+### Assessing predictions
+
+Now that we've got this boosted model, let's use it to predict letters in our test dataset. 
+
+First, let's generate the predictions.
+
+```{r Generate predictions}
+yhat <- predict(boost.characters, 
+                df_test, 
+                n.trees = 50, 
+                type = "response")
+predicted <- LETTERS[apply(yhat, 1, which.max)]
+actual <- df_test$V1
+```
+
+Now, let's compare these to the actual values in a large "confusion matrix" and find the misclassification rate.
+
+```{r Misclassification rate}
+conf_matrix <- table(actual, predicted)
+conf_matrix
+
+miss.rate <- mean(actual != predicted)
+miss.rate
+```
+
+The mislassification rate from this model on our test data is 0.3198 -- not great. We can actually get a little more in depth with this, and calculate the misclassification rate of our for each letter. I've done so below.
+
+```{r Misclassification rate by letter}
+miss.rates <- rep(NA, 26)
+for (i in 1:26) {
+  miss.rates[i] = (
+    sum(conf_matrix[i,]) - conf_matrix[i,i])/
+    sum(conf_matrix[i,])
+}
+miss.rates
+```
+
+From this, we can see that the letters which are misclassified most frequently are the 5th and 8th letters of the alphabet: E and H. E was misclassified nearly 65% of the time, and most commonly mistaken for X, C, and G. Distinguishing between E and X was the hardest of all combinations for our model, as the 35 "E" observations predicted as "X" was the highest mistake rate of any pair of letters. Following E, H was misclassified 59% of the time, and most commonly mistaken for O.
+
+\newpage
+
+### Slow the learning
+
+Let's now change up the parameters of our boosted model to try to lower this misclassification rate. I'll change lambda to 0.033 and increase B to 150. 
+
+```{r Slower boosted tree, warning = FALSE, message = FALSE}
+slow.boost.characters=gbm(V1 ~ ., 
+                          data=df_train, 
+                          n.trees=150, 
+                          interaction.depth=1, 
+                          shrinkage = 0.033)
+head(summary(slow.boost.characters))
+```
+
+Again, V13, V12, and V14 are the most important variables for predicting a character. Let's now find the new misclassification rate and compare it to our original model. 
+
+```{r New misclassification rate}
+slow.yhat <- predict(slow.boost.characters, 
+                     df_test, 
+                     n.trees = 150, 
+                     type = "response")
+slow.predicted <- LETTERS[apply(slow.yhat, 1, which.max)]
+slow.miss.rate <- mean(actual != slow.predicted)
+slow.miss.rate
+```
+
+This new misclassification rate, 0.3236, is actually a little worse than the original misclassification rate. We can (again) get a little more granular by calculating the miscalculation rate by letter. I've done so below. 
+
+```{r New misclassification by letter}
+slow.conf.matrix <- table(actual, slow.predicted)
+slow.miss.rates <- rep(NA, 26)
+for (i in 1:26) {
+  slow.miss.rates[i] = (
+    sum(slow.conf.matrix[i,]) - slow.conf.matrix[i,i])/
+    sum(slow.conf.matrix[i,])
+}
+slow.miss.rates
+```
+
+Here again, E (the 5th letter) and H (the 8th) are the hardest letters for our model to predict. To dive in more, we can see which letters this slower model is better (or worse) at predicting by finding the change in misclassification rates by letter. Letters where the change is negative imply a lower (better) misclassification rate in the slower model, while those where the change is positive imply that the slower model is worse for that letter. 
+
+```{r Change in misclassification rate}
+miss.rate.changes <- rep(NA, 26)
+for (i in 1:26) {
+  miss.rate.changes[i] = (
+    slow.miss.rates[i] - miss.rates[i])
+}
+miss.rate.changes
+```
+
+As we'd expect from the overall higher misclassification rate, the new model is worse for the majority of the letters. Some notable highlights: the slower model misclassifies about 2% more "J"s, 1.5% more "E"s, and 2% more "P"s than the original model did. 
+
+\newpage
+
+## Communities and crime
+
+Now, I'll return once more to the crime dataset, which has been put to very good use so far this semester. 
+
+### Data
+
+First, let's download the data (both training and test).
+
+```{r Crime data download}
+crime.train <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
+crime.test <- read.csv("https://bit.ly/2PYS8Ap")
+```
+
+In order to compare the boosting method on this dataset to previous methods (ridge, lasso, bagging, random forests, etc.), I'll first need to get the data in comparable format. I'll therefore transform the data to match my earlier transformations. 
+
+```{r Data transformations, warning= FALSE, message= FALSE}
+library(tidyverse)
+# Training data transformation
+crime.train <- crime.train %>%
+  mutate(sqrInvInc = (100*pctWInvInc)^2,
+         sqrPop = population^2)
+
+crime.train.section <- select_if(crime.train, is.numeric)
+
+# Test data transformation
+crime.test <- crime.test %>%
+  mutate(sqrInvInc = (100*pctWInvInc)^2,
+         sqrPop = population^2)
+
+crime.test.section <- select_if(crime.test, is.numeric)
+```
+
+\newpage
+
+### One last boost
+
+Now, let's create a boosted regression tree to predict crime, and compare its MSE to prior models. Note that I've used the parameters lambda = 0.1 and B = 200. 
+
+```{r Create boosted tree}
+crime.boost <- gbm(ViolentCrimesPerPop ~ ., 
+                   data= crime.train.section, 
+                   distribution = "gaussian",
+                   n.trees= 200, 
+                   interaction.depth=1, 
+                   shrinkage = 0.1)
+head(summary(crime.boost))
+```
+
+Now, let's estimate the test MSE of this boosted model using the `crime.test.section`.
+
+```{r Estimate MSE}
+MSE.crime.boost <- mean((crime.test.section$ViolentCrimesPerPop - 
+                           predict(crime.boost, 
+                                   crime.test.section, 
+                                   n.trees = 200, 
+                                   type = "response")) ^ 2)
+MSE.crime.boost
+```
+
+The estimated test MSE of our new model is therefore 0.01253594. While good (better than any of the lasso, ridge, or linear models), this is still significantly higher than that of the random forests model, which had a MSE of 0.003113876. 
+
+\newpage
+
+## Chapter 8 exercises
+
+### Problem 5
+
+
+*Suppose we produce ten bootstrapped samples from a data set containing red and green classes. We then apply a classification tree to each bootstrapped sample and, for a specific value of X, produce 10 estimates of P(Class is Red|X):*
+
+\begin{center}
+
+0.1, 0.15, 0.2, 0.2, 0.55, 0.6, 0.6, 0.65, 0.7, and 0.75.
+
+\end{center}
+
+*There are two common ways to combine these results together into a single class prediction. One is the majority vote approach discussed in this chapter. The second approach is to classify based on the average probability. In this example, what is the final classification under each of these two approaches?*
+
+#### Majority vote
+
+Using the majority vote approached discussed in Chapter 8, we would determine the prediction from each of the probabilities. The final classification would be the value most frequently predicted. 
+
+In this case, we have the following predictions (where if P > .5, the prediction is red):
+
+1. green
+2. green
+3. green
+4. green
+5. red
+6. red
+7. red
+8. red
+9. red
+10. red
+
+The majority of the samples generate a predictiont that this specific value is **red**, so this is our final classification. 
+
+#### Average probability
+
+Using the average probability, we would take the mean of the probabilities as our final probability estimate. If the final probability estimate is above 0.5, the final classification would be red; else, it would be green. 
+
+The average of the 10 probabilities above is 0.45, so in this case, the final prediction would be **green**. 
+
+\newpage
+
+### Problem 6
+
+*Provide a detailed explanation of the algorithm that is used to fit a regression tree.*
+
+The algorithm that is used to fit a regression tree proceeds as follows. 
+
+1. Divide the observations into two sections with different predictions (mean response values), such that the RSS (given by the equation below) is minimized by the split. The two sections are ranges of the $X_j$ space, separated by the cutpoint $s$. 
+
+$$\sum_{j = 1}^{J}\sum_{i \in R_j}(y_i - \hat{y}_{R_j})^2$$
+
+2. Repeat step 1 for one of the new sections, such that RSS is minimized by the new split. 
+
+3. Continue splitting the new sections until some stopping criterion is reached. 
